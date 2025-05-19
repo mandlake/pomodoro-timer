@@ -1,21 +1,41 @@
 "use client";
 
-import { createContext, useReducer, useContext } from "react";
+// src/context/TimerContext.tsx
+
+import React, { createContext, useReducer, useContext, useEffect } from "react";
 import type { TimerState, TimerAction, TimerMode } from "../types/timer";
 
-// 기본 설정
 const FOCUS_DURATION = 25 * 60;
 const BREAK_DURATION = 5 * 60;
+const STORAGE_KEY = "pomodoro-timer-state";
 
-// 초기 상태
-const initialState: TimerState = {
-  mode: "FOCUS",
-  timeLeft: FOCUS_DURATION,
-  isRunning: false,
-  sessionsCompleted: 0,
-};
+// 🔁 상태 로드
+function loadStateFromStorage(): TimerState {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (!raw)
+    return {
+      mode: "FOCUS",
+      timeLeft: FOCUS_DURATION,
+      isRunning: false,
+      sessionsCompleted: 0,
+    };
 
-// 리듀서 정의
+  try {
+    const parsed: TimerState = JSON.parse(raw);
+    return {
+      ...parsed,
+      isRunning: false, // 앱 재시작 시 항상 일시정지 상태로 시작
+    };
+  } catch {
+    return {
+      mode: "FOCUS",
+      timeLeft: FOCUS_DURATION,
+      isRunning: false,
+      sessionsCompleted: 0,
+    };
+  }
+}
+
 function timerReducer(state: TimerState, action: TimerAction): TimerState {
   switch (action.type) {
     case "START":
@@ -50,17 +70,20 @@ function timerReducer(state: TimerState, action: TimerAction): TimerState {
   }
 }
 
-// Context 생성
 const TimerContext = createContext<{
   state: TimerState;
   dispatch: React.Dispatch<TimerAction>;
 } | null>(null);
 
-// Provider 정의
 export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [state, dispatch] = useReducer(timerReducer, initialState);
+  const [state, dispatch] = useReducer(timerReducer, loadStateFromStorage());
+
+  useEffect(() => {
+    const { isRunning, ...persistable } = state;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(persistable));
+  }, [state]);
 
   return (
     <TimerContext.Provider value={{ state, dispatch }}>
@@ -69,7 +92,6 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 };
 
-// 커스텀 훅
 export function useTimerContext() {
   const context = useContext(TimerContext);
   if (!context)
