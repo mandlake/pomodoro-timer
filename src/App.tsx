@@ -1,13 +1,21 @@
-import { TimerProvider } from "./context/TimerContext";
+"use client";
 
-import "./App.css";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { TimerProvider } from "./context/TimerContext";
 import Home from "./pages/Home";
+import Settings from "./pages/Settings";
 
 function App() {
   return (
     <TimerProvider>
-      <Home />
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/settings" element={<Settings />} />
+        </Routes>
+      </BrowserRouter>
     </TimerProvider>
   );
 }
+
 export default App;

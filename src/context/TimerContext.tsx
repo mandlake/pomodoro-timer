@@ -1,30 +1,35 @@
 "use client";
 
-// src/context/TimerContext.tsx
-
-import React, { createContext, useReducer, useContext, useEffect } from "react";
-import type { TimerState, TimerAction, TimerMode } from "../types/timer";
+import { createContext, useReducer, useContext, useEffect } from "react";
+import type { TimerState, TimerAction } from "../types/timer";
 
 const FOCUS_DURATION = 25 * 60;
 const BREAK_DURATION = 5 * 60;
 const STORAGE_KEY = "pomodoro-timer-state";
 
-// 🔁 상태 로드
 function loadStateFromStorage(): TimerState {
   const raw = localStorage.getItem(STORAGE_KEY);
-  if (!raw)
+  const defaultSettings = {
+    focusDuration: FOCUS_DURATION,
+    breakDuration: BREAK_DURATION,
+  };
+
+  if (!raw) {
     return {
       mode: "FOCUS",
       timeLeft: FOCUS_DURATION,
       isRunning: false,
       sessionsCompleted: 0,
+      settings: defaultSettings,
     };
+  }
 
   try {
-    const parsed: TimerState = JSON.parse(raw);
+    const parsed = JSON.parse(raw);
     return {
       ...parsed,
-      isRunning: false, // 앱 재시작 시 항상 일시정지 상태로 시작
+      isRunning: false,
+      settings: parsed.settings ?? defaultSettings,
     };
   } catch {
     return {
@@ -32,6 +37,7 @@ function loadStateFromStorage(): TimerState {
       timeLeft: FOCUS_DURATION,
       isRunning: false,
       sessionsCompleted: 0,
+      settings: defaultSettings,
     };
   }
 }
@@ -45,7 +51,10 @@ function timerReducer(state: TimerState, action: TimerAction): TimerState {
     case "RESET":
       return {
         ...state,
-        timeLeft: state.mode === "FOCUS" ? FOCUS_DURATION : BREAK_DURATION,
+        timeLeft:
+          state.mode === "FOCUS"
+            ? state.settings.focusDuration
+            : state.settings.breakDuration,
         isRunning: false,
       };
     case "TICK":
@@ -54,10 +63,16 @@ function timerReducer(state: TimerState, action: TimerAction): TimerState {
         timeLeft: state.timeLeft > 0 ? state.timeLeft - 1 : 0,
       };
     case "SWITCH_MODE": {
-      const newMode: TimerMode = state.mode === "FOCUS" ? "BREAK" : "FOCUS";
+      const newMode = state.mode === "FOCUS" ? "BREAK" : "FOCUS";
+      const newTime =
+        newMode === "FOCUS"
+          ? state.settings.focusDuration
+          : state.settings.breakDuration;
+
       return {
+        ...state,
         mode: newMode,
-        timeLeft: newMode === "FOCUS" ? FOCUS_DURATION : BREAK_DURATION,
+        timeLeft: newTime,
         isRunning: false,
         sessionsCompleted:
           newMode === "FOCUS"
@@ -65,6 +80,16 @@ function timerReducer(state: TimerState, action: TimerAction): TimerState {
             : state.sessionsCompleted + 1,
       };
     }
+    case "UPDATE_SETTINGS":
+      return {
+        ...state,
+        settings: action.payload,
+        timeLeft:
+          state.mode === "FOCUS"
+            ? action.payload.focusDuration
+            : action.payload.breakDuration,
+        isRunning: false,
+      };
     default:
       return state;
   }
