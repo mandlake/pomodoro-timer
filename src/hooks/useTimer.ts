@@ -14,5 +14,5 @@ export function useTimer() {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [state.timeLeft, dispatch]);
+  }, [state.isRunning, state.timeLeft, dispatch]);
 }
