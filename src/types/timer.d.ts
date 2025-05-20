@@ -7,9 +7,9 @@ export interface TimerSettings {
 
 export interface TimerState {
   mode: TimerMode;
-  timeLeft: number; // 단위: 초
+  timeLeft: number;
   isRunning: boolean;
-  sessionsCompleted: number;
+  dailySessions: Record<string, number>;
   settings: TimerSettings;
 }
 

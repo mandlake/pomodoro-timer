@@ -19,8 +19,8 @@ function loadStateFromStorage(): TimerState {
       mode: "FOCUS",
       timeLeft: FOCUS_DURATION,
       isRunning: false,
-      sessionsCompleted: 0,
       settings: defaultSettings,
+      dailySessions: {},
     };
   }
 
@@ -30,14 +30,15 @@ function loadStateFromStorage(): TimerState {
       ...parsed,
       isRunning: false,
       settings: parsed.settings ?? defaultSettings,
+      dailySessions: parsed.dailySessions ?? {}, // ✅ 추가
     };
   } catch {
     return {
       mode: "FOCUS",
       timeLeft: FOCUS_DURATION,
       isRunning: false,
-      sessionsCompleted: 0,
       settings: defaultSettings,
+      dailySessions: {}, // ✅ 추가
     };
   }
 }
@@ -69,15 +70,19 @@ function timerReducer(state: TimerState, action: TimerAction): TimerState {
           ? state.settings.focusDuration
           : state.settings.breakDuration;
 
+      const today = new Date().toISOString().split("T")[0]; // "YYYY-MM-DD"
+      const updatedDaily = { ...state.dailySessions };
+
+      if (newMode === "FOCUS") {
+        updatedDaily[today] = (updatedDaily[today] || 0) + 1;
+      }
+
       return {
         ...state,
         mode: newMode,
         timeLeft: newTime,
         isRunning: false,
-        sessionsCompleted:
-          newMode === "FOCUS"
-            ? state.sessionsCompleted
-            : state.sessionsCompleted + 1,
+        dailySessions: updatedDaily,
       };
     }
     case "UPDATE_SETTINGS":
@@ -106,7 +111,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({
   const [state, dispatch] = useReducer(timerReducer, loadStateFromStorage());
 
   useEffect(() => {
-    const { isRunning, ...persistable } = state;
+    const { isRunning: _, ...persistable } = state;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(persistable));
   }, [state]);
 
