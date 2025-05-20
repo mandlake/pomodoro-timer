@@ -1,7 +1,7 @@
 "use client";
 import { Link } from "react-router-dom";
 import ControlButtons from "../components/ControlButtons";
-import HistoryLog from "../components/historyLog";
+import HistoryLog from "../components/HistoryLog";
 import ProgressBar from "../components/ProgressBar";
 import TimerDisplay from "../components/TimerDisplay";
 import { useTimer } from "../hooks/useTimer";
